@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Scraper | Professional Email Extraction Tool</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="bg-gradient"></div>
+    <div class="container">
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <h1 class="title">✉️ Email Scraper</h1>
+                    <p class="subtitle">Extract emails from websites with ease</p>
+                </div>
+            </div>
+            <p class="description">Powerful email extraction tool. Works with single URLs or bulk processing via Excel.</p>
+        </header>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="alert alert-error">
+              {% for message in messages %}
+                <span class="alert-icon">⚠️</span>
+                <p>{{ message }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <div class="content">
+            <div class="cards-grid">
+
+                <!-- Single URL Card -->
+                <div class="card card-single">
+                    <div class="card-header">
+                        <h2>Single URL</h2>
+                        <span class="card-badge">Quick</span>
+                    </div>
+                    <p class="card-description">Enter a single website URL to extract emails in seconds</p>
+                    <form method="POST" class="form">
+                        <div class="form-group">
+                            <label for="single_url">Website URL</label>
+                            <input 
+                                type="url" 
+                                id="single_url"
+                                name="single_url" 
+                                placeholder="https://example.com" 
+                                required
+                            >
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <span>🔍</span> Fetch Emails
+                        </button>
+                    </form>
+
+                    {% if single_result %}
+                    <div class="result-box">
+                        <div class="result-header">✓ Extraction Complete</div>
+                        <div class="result-content">{{ single_result }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Bulk Upload Card -->
+                <div class="card card-bulk">
+                    <div class="card-header">
+                        <h2>Bulk Upload</h2>
+                        <span class="card-badge">Batch</span>
+                    </div>
+                    <p class="card-description">Upload an Excel file with multiple URLs for batch processing</p>
+                    <form method="POST" enctype="multipart/form-data" class="form">
+                        <div class="form-group">
+                            <label for="file">Select Excel File (.xlsx)</label>
+                            <div class="file-input-wrapper">
+                                <input 
+                                    type="file" 
+                                    id="file"
+                                    name="file" 
+                                    accept=".xlsx"
+                                    required
+                                >
+                                <span class="file-label">📁 Choose File</span>
+                            </div>
+                            <p class="file-note">Excel must have a column named <strong>"urls"</strong></p>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <span>📤</span> Process File
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>Developed by <strong>Mehwish</strong> • PAI Lab 1</p>
+        </footer>
+    </div>
+</body>
+</html>
