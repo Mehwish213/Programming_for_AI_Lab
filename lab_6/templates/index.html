@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>FaceProfile AI — Scientific Facial Analysis</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════
+   CSS VARIABLES
+═══════════════════════════════════════════════════ */
+
+:root{
+  --bg:#08080f;--bg2:#0f0f1c;--bg3:#151525;--bg4:#1c1c30;
+  --border:#252540;--border-hi:#6022b0;
+  --p1:#7c22ed;--p2:#a855f7;--p3:#c084fc;--p4:#e9d5ff;
+  --grad:linear-gradient(135deg,#7c22ed,#a855f7,#c084fc);
+  --grad2:linear-gradient(135deg,#4f0aad,#7c22ed);
+  --glow:rgba(124,34,237,0.30);--glow2:rgba(168,85,247,0.15);
+  --cyan:#22d3ee;--green:#4ade80;--yellow:#facc15;
+  --red:#f87171;--orange:#fb923c;
+  --text:#f0f0ff;--text2:#b8b8d4;--text3:#7070a0;
+  --sidebar:260px;
+  --radius:10px;--radius-sm:6px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:'Segoe UI',system-ui,sans-serif;
+  font-size:14px;line-height:1.6;
+  display:flex;min-height:100vh;overflow-x:hidden;
+}
+
+/* ═══════════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════════ */
+
+.sidebar{
+  width:var(--sidebar);min-height:100vh;
+  background:var(--bg2);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  position:fixed;left:0;top:0;z-index:100;
+  transition:transform 0.35s cubic-bezier(.4,0,.2,1);
+}
+.sidebar-logo{
+  padding:20px 18px 16px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:12px;
+}
+.logo-icon{
+  width:38px;height:38px;border-radius:9px;
+  background:var(--grad);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 18px var(--glow);flex-shrink:0;
+}
+.sidebar-logo h1{font-size:1rem;font-weight:700;letter-spacing:-0.01em;
+  background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.sidebar-logo p{font-size:0.62rem;color:var(--text3);margin-top:1px}
+
+.sidebar-section{padding:12px 10px 4px;font-size:0.6rem;letter-spacing:0.14em;
+  text-transform:uppercase;color:var(--text3);font-weight:600;}
+
+.nav-btn{
+  display:flex;align-items:center;gap:11px;
+  width:100%;padding:10px 14px;border:none;border-radius:var(--radius-sm);
+  background:transparent;color:var(--text2);font-size:0.8rem;
+  cursor:pointer;text-align:left;margin:2px 6px;width:calc(100% - 12px);
+  transition:all 0.25s ease;position:relative;overflow:hidden;
+}
+.nav-btn::before{
+  content:'';position:absolute;inset:0;border-radius:var(--radius-sm);
+  background:var(--grad);opacity:0;transition:opacity 0.25s;
+}
+.nav-btn:hover{color:var(--text);}
+.nav-btn:hover::before{opacity:0.12;}
+.nav-btn.active{color:var(--p3);background:rgba(124,34,237,0.15);
+  border:1px solid rgba(124,34,237,0.3);}
+.nav-btn.active::before{opacity:0;}
+.nav-btn .nav-icon{width:18px;height:18px;flex-shrink:0;position:relative;z-index:1;color:var(--p3);}
+.nav-btn span{position:relative;z-index:1;}
+
+.sidebar-footer{margin-top:auto;padding:14px;border-top:1px solid var(--border);}
+.version-badge{
+  display:flex;align-items:center;gap:7px;
+  padding:7px 10px;background:var(--bg3);border-radius:var(--radius-sm);
+  font-size:0.62rem;color:var(--text3);
+}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);
+  animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.25}}
+
+/* ═══════════════════════════════════════════════════
+   MAIN CONTENT
+═══════════════════════════════════════════════════ */
+.main{
+  margin-left:5px;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+}
+.topbar{
+  height:56px;background:var(--bg2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 24px;
+  position:sticky;top:0;z-index:50;gap:14px;
+}
+.topbar-title{font-size:0.9rem;font-weight:600;color:var(--text);}
+.topbar-sub{font-size:0.7rem;color:var(--text3);margin-left:auto;}
+.badge{
+  padding:3px 10px;border-radius:20px;font-size:0.62rem;font-weight:600;
+  letter-spacing:0.06em;
+}
+.badge-purple{background:rgba(124,34,237,0.2);color:var(--p3);border:1px solid rgba(124,34,237,0.4);}
+.badge-green{background:rgba(74,222,128,0.12);color:var(--green);border:1px solid rgba(74,222,128,0.3);}
+.badge-cyan{background:rgba(34,211,238,0.12);color:var(--cyan);border:1px solid rgba(34,211,238,0.3);}
+
+.content{padding:28px;flex:1;}
+
+/* ═══════════════════════════════════════════════════
+   PAGES (shown/hidden via JS)
+═══════════════════════════════════════════════════ */
+.page{display:none;animation:fadeUp 0.4s ease;}
+.page.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══════════════════════════════════════════════════
+   CARDS
+═══════════════════════════════════════════════════ */
+.card{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;margin-bottom:24px;
+}
+.card-hd{
+  display:flex;align-items:center;gap:100px;
+  padding:16px 20px;border-bottom:1px solid var(--border);
+  background:var(--bg3);
+}
+.card-hd-icon{
+  width:28px;height:28px;border-radius:6px;
+  background:rgba(124,34,237,0.15);border:1px solid rgba(124,34,237,0.35);
+  display:flex;align-items:center;justify-content:center;
+}
+.card-hd-icon svg{width:14px;height:14px;color:var(--p3);}
+.card-title{font-size:0.82rem;font-weight:600;}
+.card-body{padding:20px;}
+
+/* Grid layouts */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);}
+
+/* Chart & Graph Container */
+.chart-container{position:relative;height:380px;width:100%;margin-bottom:20px;padding:16px;background:var(--bg);border-radius:var(--radius);border:1px solid var(--border);}
+.chart-selector{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.chart-btn{padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:0.75rem;cursor:pointer;transition:all 0.2s;font-weight:500;}
+.chart-btn.active{background:var(--grad);border-color:var(--p1);color:#fff;box-shadow:0 0 16px var(--glow);}
+.chart-btn:hover{border-color:var(--p1);color:var(--p3);}
+
+/* ═══════════════════════════════════════════════════
+   BUTTONS — gradient
+═══════════════════════════════════════════════════ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:9px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);
+  background:var(--bg3);color:var(--text2);font-size:0.78rem;font-weight:500;
+  cursor:pointer;transition:all 0.22s ease;white-space:nowrap;
+}
+.btn svg{width:15px;height:15px;}
+.btn:hover{border-color:var(--p2);color:var(--p3);background:rgba(124,34,237,0.1);}
+
+.btn-grad{
+  background:var(--grad);border-color:transparent;color:#fff;font-weight:600;
+  font-size:0.82rem;padding:11px 22px;
+  box-shadow:0 0 22px var(--glow),0 2px 8px rgba(0,0,0,0.4);
+  position:relative;overflow:hidden;
+}
+.btn-grad::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,0.15),transparent);
+  opacity:0;transition:opacity 0.2s;
+}
+.btn-grad:hover::after{opacity:1;}
+.btn-grad:hover{transform:translateY(-1px);box-shadow:0 0 30px var(--glow),0 6px 16px rgba(0,0,0,0.4);}
+.btn-grad:disabled{opacity:0.35;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-grad:active{transform:translateY(0);}
+
+.btn-outline-grad{
+  background:transparent;border:1px solid transparent;
+  background-clip:padding-box;position:relative;color:var(--p3);
+  font-weight:500;
+}
+.btn-outline-grad::before{
+  content:'';position:absolute;inset:-1px;border-radius:calc(var(--radius-sm)+1px);
+  background:var(--grad);z-index:-1;
+}
+.btn-outline-grad:hover{background:rgba(124,34,237,0.12);}
+
+.btn-full{width:100%;margin-top:14px;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* ═══════════════════════════════════════════════════
+   UPLOAD ZONE
+═══════════════════════════════════════════════════ */
+.upload-zone{
+  position:relative;border:2px dashed var(--border);border-radius:var(--radius);
+  min-height:200px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all 0.25s;background:var(--bg);overflow:hidden;
+  text-align:center;
+}
+.upload-zone:hover,.upload-zone.drag-over{
+  border-color:var(--p1);background:rgba(124,34,237,0.06);
+}
+.upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0;}
+.upload-ph{padding:30px 20px;pointer-events:none;}
+.upload-ph .up-ring{
+  width:60px;height:60px;border-radius:50%;margin:0 auto 16px;
+  background:rgba(124,34,237,0.1);border:2px solid rgba(124,34,237,0.3);
+  display:flex;align-items:center;justify-content:center;
+}
+.upload-ph .up-ring svg{width:26px;height:26px;color:var(--p2);}
+.upload-ph h3{font-size:0.95rem;font-weight:600;margin-bottom:6px;}
+.upload-ph p{font-size:0.7rem;color:var(--text3);}
+#preview-img{display:none;width:100%;max-height:340px;object-fit:contain;background:#000;}
+
+/* ═══════════════════════════════════════════════════
+   DIVIDER
+═══════════════════════════════════════════════════ */
+.or-div{display:flex;align-items:center;gap:10px;margin:14px 0;}
+.or-div::before,.or-div::after{content:'';flex:1;height:1px;background:var(--border);}
+.or-div span{font-size:0.62rem;color:var(--text3);letter-spacing:0.1em;text-transform:uppercase;}
+
+/* ═══════════════════════════════════════════════════
+   CAMERA
+═══════════════════════════════════════════════════ */
+#camera-video{
+  display:none;width:100%;max-height:280px;object-fit:cover;
+  border-radius:var(--radius);border:1px solid var(--border);background:#000;margin-top:12px;
+}
+
+/* ═══════════════════════════════════════════════════
+   ERROR BOX
+═══════════════════════════════════════════════════ */
+.err-box{
+  display:none;margin-top:12px;padding:11px 14px;border-radius:var(--radius-sm);
+  border:1px solid rgba(248,113,113,0.3);background:rgba(248,113,113,0.08);
+  color:var(--red);font-size:0.74rem;gap:8px;align-items:flex-start;
+}
+.err-box.show{display:flex;}
+
+/* ═══════════════════════════════════════════════════
+   LOADING OVERLAY
+═══════════════════════════════════════════════════ */
+#loading{
+  display:none;position:fixed;inset:0;z-index:1000;
+  background:rgba(8,8,15,0.85);backdrop-filter:blur(8px);
+  align-items:center;justify-content:center;flex-direction:column;gap:20px;
+}
+#loading.show{display:flex;}
+.spin-ring{
+  width:56px;height:56px;border-radius:50%;
+  border:3px solid var(--border);border-top-color:var(--p2);
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.load-txt{font-size:0.78rem;color:var(--p3);letter-spacing:0.14em;text-transform:uppercase;}
+.load-sub{font-size:0.65rem;color:var(--text3);}
+
+/* ═══════════════════════════════════════════════════
+   ANALYSIS RESULTS
+═══════════════════════════════════════════════════ */
+.img-ph{
+  height:260px;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:12px;background:var(--bg);
+}
+.img-ph svg{width:48px;height:48px;opacity:0.15;}
+.img-ph p{font-size:0.7rem;color:var(--text3);}
+#annotated-img{display:none;width:100%;max-height:360px;object-fit:contain;background:#000;}
+
+.legend{display:none;flex-wrap:wrap;gap:10px;padding:12px 18px;
+  border-top:1px solid var(--border);background:var(--bg3);}
+.legend.show{display:flex;}
+.leg{display:flex;align-items:center;gap:5px;font-size:0.62rem;color:var(--text3);}
+.leg-dot{width:9px;height:9px;border-radius:2px;}
+
+/* Personality card */
+#pers-card{display:none;margin-bottom:24px;}
+#pers-card.show{display:block;}
+.p-top{display:flex;align-items:flex-start;gap:22px;margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid rgba(124,34,237,0.1);}
+.type-badge{
+  flex-shrink:0;width:96px;height:96px;border-radius:16px;
+  background:var(--grad);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  box-shadow:0 0 32px var(--glow);
+}
+.type-code{font-size:1.8rem;font-weight:800;color:#fff;letter-spacing:0.08em;line-height:1;}
+.type-lbl{font-size:0.58rem;color:rgba(255,255,255,0.72);letter-spacing:0.12em;margin-top:4px;font-weight:600;}
+.type-emoji{font-size:1.3rem;margin-bottom:3px;}
+.type-info h2{font-size:1.1rem;font-weight:700;color:var(--p3);margin-bottom:6px;}
+.type-info p{font-size:0.76rem;color:var(--text2);line-height:1.75;}
+.science-note{
+  margin-top:10px;padding:8px 12px;border-radius:var(--radius-sm);
+  background:rgba(124,34,237,0.08);border-left:3px solid var(--p1);
+  font-size:0.68rem;color:var(--text3);font-style:italic;line-height:1.6;
+}
+
+/* Axes */
+.axes{display:flex;flex-direction:column;gap:18px;margin-bottom:24px;padding:16px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid rgba(124,34,237,0.15);}
+.axis-wrap{display:grid;grid-template-columns:32px 1fr 32px;align-items:center;gap:10px;}
+.ax-lbl{font-size:0.72rem;font-weight:700;text-align:center;color:var(--text3);}
+.ax-lbl.hi{color:var(--p3);font-weight:800;}
+.ax-track{height:8px;background:var(--bg);border-radius:5px;overflow:hidden;border:1px solid rgba(124,34,237,0.2);}
+.ax-fill{height:100%;background:var(--grad);border-radius:5px;width:0;transition:width 1s cubic-bezier(.25,.8,.25,1);}
+.ax-name{font-size:0.62rem;color:var(--text2);text-align:left;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:6px;font-weight:600;}
+.ax-pct{font-size:0.64rem;color:var(--p3);text-align:center;margin-top:4px;font-weight:600;}
+
+/* Tags */
+.tag-sec{margin-bottom:18px;padding:14px;background:var(--bg);border-radius:var(--radius-sm);border:1px solid rgba(124,34,237,0.15);}
+.tag-sec-lbl{font-size:0.64rem;color:var(--text2);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;font-weight:600;}
+.tag-row{display:flex;flex-wrap:wrap;gap:8px;}
+.tag{padding:6px 14px;border-radius:20px;font-size:0.71rem;font-weight:500;border:1px solid;transition:all 0.2s;}
+.tag.s{border-color:rgba(74,222,128,0.4);background:rgba(74,222,128,0.08);color:var(--green);}
+.tag.s:hover{background:rgba(74,222,128,0.16);border-color:var(--green);}
+.tag.g{border-color:rgba(192,132,252,0.35);background:rgba(192,132,252,0.07);color:var(--p3);}
+.tag.g:hover{background:rgba(192,132,252,0.15);border-color:var(--p3);}
+
+/* Measures grid */
+#measures-card{display:none;margin-bottom:24px;}
+#measures-card.show{display:block;}
+.m-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:rgba(124,34,237,0.1);border-radius:8px;overflow:hidden;margin-bottom:22px;}
+.m-cell{background:var(--bg);padding:16px 14px;transition:all 0.2s;position:relative;}
+.m-cell:hover{background:var(--bg3);border:1px solid rgba(124,34,237,0.4);}
+.m-key{font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:6px;font-weight:600;}
+.m-val{font-size:1.05rem;font-weight:700;color:var(--text);}
+.m-val.pu{color:var(--p3)}.m-val.cy{color:var(--cyan)}.m-val.gn{color:var(--green)}.m-val.yw{color:var(--yellow)}
+
+/* Phi detail table */
+.phi-table{width:100%;border-collapse:collapse;font-size:0.74rem;line-height:1.8;}
+.phi-table th{text-align:left;padding:12px 14px;font-size:0.65rem;color:var(--text2);font-weight:700;
+  text-transform:uppercase;letter-spacing:0.09em;border-bottom:2px solid rgba(124,34,237,0.2);}
+.phi-table td{padding:11px 14px;border-bottom:1px solid rgba(124,34,237,0.12);}
+.phi-table tr:last-child td{border-bottom:1px solid rgba(124,34,237,0.2);}
+.phi-table tr:hover td{background:rgba(124,34,237,0.08);}
+.score-bar-wrap{width:100px;height:6px;background:var(--border);border-radius:4px;overflow:hidden;border:1px solid rgba(124,34,237,0.2);}
+.score-bar{height:100%;border-radius:4px;background:var(--grad);transition:width 0.9s cubic-bezier(.25,.8,.25,1);}
+
+/* Harmony meter */
+.harm-block{padding:18px 20px;background:var(--bg);border:1px solid rgba(124,34,237,0.15);border-radius:var(--radius);margin-top:20px;}
+.harm-hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;gap:12px;}
+.harm-hd span{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--text2);font-weight:600;}
+.harm-score{font-size:1.8rem;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.harm-track{height:10px;background:rgba(124,34,237,0.1);border-radius:6px;overflow:hidden;border:1px solid rgba(124,34,237,0.2);}
+.harm-fill{height:100%;background:var(--grad);border-radius:6px;width:0;transition:width 1.2s cubic-bezier(.25,.8,.25,1);box-shadow:0 0 12px rgba(168,85,247,0.4);}
+
+/* ═══════════════════════════════════════════════════
+   DASHBOARD PAGE
+═══════════════════════════════════════════════════ */
+.stat-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+  padding:22px 24px;position:relative;overflow:hidden;transition:all 0.3s;
+}
+.stat-card:hover{border-color:var(--p1);transform:translateY(-2px);box-shadow:0 8px 24px var(--glow);}
+.stat-card::before{
+  content:'';position:absolute;top:-30px;right:-30px;width:100px;height:100px;
+  background:radial-gradient(circle,rgba(124,34,237,0.15),transparent 70%);
+  border-radius:50%;
+}
+.stat-card .stat-icon{
+  width:42px;height:42px;border-radius:10px;background:rgba(124,34,237,0.15);
+  border:1px solid rgba(124,34,237,0.3);display:flex;align-items:center;justify-content:center;
+  margin-bottom:14px;
+}
+.stat-card .stat-icon svg{width:20px;height:20px;color:var(--p3);}
+.stat-card .stat-num{font-size:2rem;font-weight:800;color:var(--p3);
+  background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.stat-card .stat-lbl{font-size:0.72rem;color:var(--text3);margin-top:4px;}
+
+/* Type grid */
+.type-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.type-tile{
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:14px;cursor:pointer;transition:all 0.25s;text-align:center;position:relative;
+  overflow:hidden;
+}
+.type-tile::before{
+  content:'';position:absolute;inset:0;background:var(--grad);opacity:0;transition:opacity 0.25s;
+}
+.type-tile:hover{border-color:var(--p1);transform:translateY(-2px);}
+.type-tile:hover::before{opacity:0.08;}
+.type-tile .tt-emoji{font-size:1.6rem;margin-bottom:6px;}
+.type-tile .tt-code{font-size:1rem;font-weight:700;color:var(--p3);letter-spacing:0.08em;}
+.type-tile .tt-name{font-size:0.62rem;color:var(--text3);margin-top:2px;}
+
+/* Info page sections */
+.info-section{margin-bottom:32px;}
+.info-section h2{
+  font-size:1.1rem;font-weight:700;margin-bottom:6px;
+  background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.info-section .sub{font-size:0.73rem;color:var(--text2);line-height:1.75;margin-bottom:16px;}
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.info-tile{
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
+  padding:16px;
+}
+.info-tile h4{font-size:0.8rem;font-weight:600;color:var(--p3);margin-bottom:6px;}
+.info-tile p{font-size:0.7rem;color:var(--text2);line-height:1.65;}
+.phi-visual{
+  display:flex;align-items:center;gap:16px;padding:20px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);
+  margin-bottom:14px;
+}
+.phi-num{
+  font-size:3rem;font-weight:800;
+  color:#ffffff;
+  letter-spacing:-0.02em;white-space:nowrap;
+}
+.phi-desc{font-size:0.73rem;color:var(--text2);line-height:1.7;}
+
+/* ═══════════════════════════════════════════════════
+   MODAL for type detail
+═══════════════════════════════════════════════════ */
+.modal-overlay{
+  display:none;position:fixed;inset:0;z-index:500;
+  background:rgba(8,8,15,0.8);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;
+}
+.modal-overlay.show{display:flex;}
+.modal{
+  background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+  padding:28px;max-width:520px;width:90%;position:relative;
+  animation:fadeUp 0.3s ease;
+}
+.modal-close{
+  position:absolute;top:14px;right:14px;width:30px;height:30px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:50%;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text3);
+}
+.modal-close:hover{color:var(--red);}
+.modal-close svg{width:14px;height:14px;}
+
+/* ═══════════════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════════════ */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border-hi);border-radius:2px;}
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════ */
+@media(max-width:1100px){.grid-2{grid-template-columns:1fr}.m-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%);}.sidebar.open{transform:none;}
+  .main{margin-left:0;}
+  .type-grid{grid-template-columns:repeat(2,1fr);}
+  .info-grid{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:600px){.m-grid{grid-template-columns:repeat(2,1fr)}.grid-3{grid-template-columns:1fr 1fr}}
+
+/* dot-grid bg */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:radial-gradient(rgba(124,34,237,0.07) 1px,transparent 1px);
+  background-size:28px 28px;
+}
+.sidebar,.main{position:relative;z-index:1;}
+
+/* disclaimer */
+.disc{padding:9px 13px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--radius-sm);font-size:0.64rem;color:var(--text3);line-height:1.6;margin-bottom:14px;}
+.disc strong{color:var(--text2);}
+.sidebar {
+  transform: none !important;  /* Always visible */
+  position: fixed;             /* Keep it in place */
+}
+.main {
+  margin-left: var(--sidebar) !important; /* Avoid overlapping content */
+}
+
+</style>
+</head>
+<body>
+
+<!-- ── LOADING ─────────────────────────────────── -->
+<div id="loading">
+  <div class="spin-ring"></div>
+  <div class="load-txt">Analyzing Face…</div>
+  <div class="load-sub">Running scientific biometric pipeline · Please wait</div>
+</div>
+
+<!-- ── TYPE DETAIL MODAL ──────────────────────── -->
+<div class="modal-overlay" id="type-modal">
+  <div class="modal">
+    <div class="modal-close" onclick="closeModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </div>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════
+     SIDEBAR
+═══════════════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" width="20" height="20">
+        <circle cx="12" cy="8" r="4"/>
+        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        <circle cx="17" cy="9" r="2.5" fill="#c084fc" stroke="none"/>
+        <circle cx="7" cy="9" r="2.5" fill="#c084fc" stroke="none"/>
+      </svg>
+    </div>
+    <div>
+      <h1>FaceProfile</h1>
+      <p>Scientific AI Analysis</p>
+    </div>
+  </div>
+
+  <div class="sidebar-section">Main</div>
+
+  <button class="nav-btn active" onclick="showPage('analyze')" data-page="analyze">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+    </svg>
+    <span>Face Analyzer</span>
+  </button>
+
+  <button class="nav-btn" onclick="showPage('dashboard')" data-page="dashboard">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+      <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+    </svg>
+    <span>Dashboard</span>
+  </button>
+
+  
+  <div class="sidebar-section">ANALYTICS</div>
+
+  <button class="nav-btn" onclick="showPage('personality')" data-page="personality">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+    </svg>
+    <span> Personality Profile</span>
+  </button>
+
+  <button class="nav-btn" onclick="showPage('biometric')" data-page="biometric">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M2 20h20M6 20V10M10 20V4M14 20V10M18 20V6"/>
+    </svg>
+    <span> Biometric Measurements</span>
+  </button>
+
+  <button class="nav-btn" onclick="showPage('phiratio')" data-page="phiratio">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
+    <span> φ Golden Ratio Analysis</span>
+  </button>
+
+  <div class="sidebar-section">Learn</div>
+
+  <button class="nav-btn" onclick="showPage('types')" data-page="types">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+    </svg>
+    <span>16 Personality Types</span>
+  </button>
+
+  <button class="nav-btn" onclick="showPage('golden')" data-page="golden">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
+    <span>Golden Ratio (φ)</span>
+  </button>
+
+  <button class="nav-btn" onclick="showPage('symmetry')" data-page="symmetry">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <line x1="12" y1="2" x2="12" y2="22"/>
+      <path d="M4 6h8M4 12h8M4 18h8"/>
+      <path d="M20 6h-8M20 12h-8M20 18h-8"/>
+    </svg>
+    <span>Facial Symmetry</span>
+  </button>
+
+  <button class="nav-btn" onclick="showPage('science')" data-page="science">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
+    </svg>
+    <span>Science Behind It</span>
+  </button>
+
+  <div class="sidebar-footer">
+    <div class="version-badge">
+      <div class="live-dot"></div>
+      <span>OpenCV 4.x · Port 5002 · v2.0</span>
+    </div>
+  </div>
+</aside>
+
+
+
+<!-- ════════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <button class="btn" id="mob-menu" onclick="toggleSidebar()" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span class="topbar-title" id="topbar-title">Face Analyzer</span>
+    <span class="badge badge-purple" id="topbar-badge">Scientific</span>
+    <span class="topbar-sub">Haar Cascades · Golden Ratio · MBTI Engine</span>
+  </div>
+
+  <div class="content">
+
+  <!-- ══════════════════════════════════════════
+       PAGE: ANALYZER
+  ═══════════════════════════════════════════ -->
+  <div class="page active" id="page-analyze">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-bottom:24px">
+
+      <!-- Left: Upload -->
+      <div>
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-hd-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+            <span class="card-title">Upload Photo</span>
+          </div>
+          <div class="card-body">
+            <div class="disc">
+              <strong>Best Results:</strong> Use a clear, well-lit, front-facing photo against a plain background. The system measures real facial geometry using OpenCV Haar Cascades and computes φ (Golden Ratio) scores across 6 independent facial ratios.
+            </div>
+
+            <div class="upload-zone" id="upload-zone">
+              <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp"/>
+              <div class="upload-ph" id="upload-ph">
+                <div class="up-ring">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                </div>
+                <h3>Drop image here</h3>
+                <p>or click to browse · JPG / PNG / WEBP</p>
+              </div>
+              <img id="preview-img" alt="Preview"/>
+            </div>
+
+            <div class="or-div"><span>or use camera</span></div>
+
+            <div class="btn-row">
+              <button class="btn" id="cam-btn" onclick="toggleCam()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                Camera
+              </button>
+              <button class="btn" id="capture-btn" onclick="captureFrame()" style="display:none">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>
+                Capture
+              </button>
+              <button class="btn" onclick="resetAll()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 109-9M3 3v6h6"/></svg>
+                Reset
+              </button>
+            </div>
+            <video id="camera-video" autoplay muted playsinline></video>
+
+            <button class="btn btn-grad btn-full" id="analyze-btn" onclick="runAnalysis()" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              Analyze Face
+            </button>
+            <div class="err-box" id="err-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              <span id="err-txt"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Results -->
+      <div id="results-col">
+
+        <!-- Annotated image -->
+        <div class="card">
+          <div class="card-hd">
+            <div class="card-hd-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </div>
+            <span class="card-title">Feature Detection Map</span>
+            <span class="badge badge-cyan" id="shape-badge" style="margin-left:auto;display:none">—</span>
+          </div>
+          <div id="annotated-wrap">
+            <div class="img-ph">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              <p>Upload a photo and click <strong>Analyze Face</strong></p>
+            </div>
+            <img id="annotated-img" alt="Annotated"/>
+          </div>
+          <div class="legend" id="legend">
+            <div class="leg"><div class="leg-dot" style="background:#b43cdc"></div>Face/Jaw</div>
+            <div class="leg"><div class="leg-dot" style="background:#00e6d2"></div>Eyes + IOD</div>
+            <div class="leg"><div class="leg-dot" style="background:#be78ff"></div>Brows</div>
+            <div class="leg"><div class="leg-dot" style="background:#00c8ff"></div>Nose (NI)</div>
+            <div class="leg"><div class="leg-dot" style="background:#2878ff"></div>Mouth</div>
+            <div class="leg"><div class="leg-dot" style="background:#50ff50"></div>Jawline</div>
+          </div>
+        </div>
+
+        <!-- Compact Analyze Summary (Personality + φ) -->
+        <div class="card" id="analyze-summary" style="display:block;margin-top:14px">
+          <div class="card-hd">
+            <div class="card-hd-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>
+            </div>
+            <span class="card-title">Quick Summary</span>
+          </div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:12px">
+            <div id="analyze-summary-personality" style="display:flex;align-items:center;gap:12px">
+              <div style="font-size:28px" id="analyze-summary-emoji">—</div>
+              <div>
+                <div id="analyze-summary-type" style="font-weight:700">—</div>
+                <div id="analyze-summary-type-title" style="font-size:0.85rem;color:var(--text2)"></div>
+              </div>
+            </div>
+
+            <div id="analyze-summary-phiratio" style="display:flex;justify-content:space-between;align-items:center">
+              <div>
+                <div style="font-weight:700">φ Golden Ratio</div>
+                <div id="analyze-summary-phi-desc" style="font-size:0.85rem;color:var(--text2)"></div>
+              </div>
+              <div id="analyze-summary-phi-score" style="font-weight:800;color:var(--p3)">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Personality -->
+        <div class="card" id="pers-card">
+          <div class="card-hd">
+            <div class="card-hd-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <span class="card-title">Personality Profile</span>
+            <span class="badge badge-purple" id="type-badge-top" style="margin-left:auto">—</span>
+          </div>
+          <div class="card-body">
+            <div class="p-top">
+              <div class="type-badge">
+                <div class="type-emoji" id="p-emoji">—</div>
+                <div class="type-code" id="p-type">—</div>
+                <div class="type-lbl">TYPE</div>
+              </div>
+              <div class="type-info">
+                <h2 id="p-title">—</h2>
+                <p id="p-desc">—</p>
+                <div class="science-note" id="p-science">—</div>
+              </div>
+            </div>
+            <div class="axes" id="axes-cont"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+              <div class="tag-sec">
+                <div class="tag-sec-lbl">Core Strengths</div>
+                <div class="tag-row" id="str-row"></div>
+              </div>
+              <div class="tag-sec">
+                <div class="tag-sec-lbl">Growth Areas</div>
+                <div class="tag-row" id="grow-row"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════
+       PAGE: DASHBOARD
+  ═══════════════════════════════════════════ -->
+  <div class="page" id="page-dashboard">
+    <div style="gap:20px;background:transparent;margin-bottom:32px;display:grid;grid-template-columns:repeat(4,1fr)">
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        </div>
+        <div class="stat-num">16</div>
+        <div class="stat-lbl">MBTI Personality Types</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        </div>
+        <div class="stat-num">6</div>
+        <div class="stat-lbl">φ Ratio Measurements</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="2" x2="12" y2="22"/><path d="M4 6h8M4 12h8"/></svg>
+        </div>
+        <div class="stat-num">8+</div>
+        <div class="stat-lbl">Biometric Features Measured</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        </div>
+        <div class="stat-num">1.618</div>
+        <div class="stat-lbl">The Golden Ratio φ</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-hd-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <span class="card-title">All 16 Personality Types — Quick Reference</span>
+      </div>
+      <div class="card-body">
+        <div class="type-grid" id="dash-type-grid"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:32px" class="grid-2">
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20M6 20V10M10 20V4M14 20V10M18 20V6"/></svg></div>
+          <span class="card-title">What We Measure</span>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg3);border-radius:6px;">
+              <div style="width:8px;height:8px;border-radius:2px;background:#00e6d2;flex-shrink:0"></div>
+              <div><div style="font-size:0.78rem;font-weight:600;margin-bottom:2px">Orbital Index (OI)</div><div style="font-size:0.67rem;color:var(--text3)">Eye height/width × 100 — Microseme &lt;75, Mesoseme 75–85, Megaseme &gt;85</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg3);border-radius:6px;">
+              <div style="width:8px;height:8px;border-radius:2px;background:#00c8ff;flex-shrink:0"></div>
+              <div><div style="font-size:0.78rem;font-weight:600;margin-bottom:2px">Nasal Index (NI)</div><div style="font-size:0.67rem;color:var(--text3)">Nose width/height × 100 — Leptorrhine &lt;70, Mesorrhine 70–85, Platyrrhine &gt;85</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg3);border-radius:6px;">
+              <div style="width:8px;height:8px;border-radius:2px;background:#b43cdc;flex-shrink:0"></div>
+              <div><div style="font-size:0.78rem;font-weight:600;margin-bottom:2px">Facial Index (FI)</div><div style="font-size:0.67rem;color:var(--text3)">Face height/width × 100 — Round &lt;80, Square 80–88, Oval 88–97, Oblong &gt;104</div></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg3);border-radius:6px;">
+              <div style="width:8px;height:8px;border-radius:2px;background:#facc15;flex-shrink:0"></div>
+              <div><div style="font-size:0.78rem;font-weight:600;margin-bottom:2px">Inter-Ocular Distance (IOD)</div><div style="font-size:0.67rem;color:var(--text3)">Distance between eye centers — compared to nose width (ideal ratio = φ = 1.618)</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg></div>
+          <span class="card-title">φ Ratio Measurements</span>
+        </div>
+        <div class="card-body">
+          <table class="phi-table">
+            <thead><tr><th>Ratio</th><th>Ideal</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td>IOD / Nose Width</td><td style="color:var(--p3)">φ = 1.618</td><td style="color:var(--text3)">Eye spacing vs nose harmony</td></tr>
+              <tr><td>Mouth / Nose Width</td><td style="color:var(--p3)">φ = 1.618</td><td style="color:var(--text3)">Lower face proportion</td></tr>
+              <tr><td>Face H / Face W</td><td style="color:var(--p3)">φ = 1.618</td><td style="color:var(--text3)">Overall face elongation</td></tr>
+              <tr><td>Eye Width / Nose Width</td><td style="color:var(--p3)">1.0</td><td style="color:var(--text3)">Mid-face feature balance</td></tr>
+              <tr><td>Face W / IOD</td><td style="color:var(--p3)">φ² = 2.618</td><td style="color:var(--text3)">Face width to eye span</td></tr>
+              <tr><td>Mouth / Eye Width</td><td style="color:var(--p3)">φ = 1.618</td><td style="color:var(--text3)">Lower to mid face ratio</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PAGE: 16 TYPES
+  ═══════════════════════════════════════════ -->
+  <div class="page" id="page-types">
+    <div class="disc">Click any personality type to see full description, scientific basis, strengths, and growth areas.</div>
+    <div class="type-grid" id="types-grid" style="margin-bottom:20px"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PAGE: GOLDEN RATIO
+  ═══════════════════════════════════════════ -->
+  <div class="page" id="page-golden">
+    <div class="phi-visual">
+      <div class="phi-num">φ = 1.618…</div>
+      <div class="phi-desc">
+        The <strong style="color:var(--p3)">Golden Ratio (φ)</strong> is an irrational mathematical constant ≈ 1.6180339887. It appears when a line is divided so that the ratio of the whole to the larger part equals the ratio of the larger to smaller part. Found throughout nature, art, and architecture, it is believed to be intrinsically perceived as beautiful by the human brain.<br><br>
+        In facial analysis, the Marquardt Beauty Mask (Dr. Stephen Marquardt, 2001) established that faces closest to φ-based proportions are consistently rated most attractive across cultures. Our engine measures 6 independent φ ratios and computes a weighted harmony score.
+      </div>
+    </div>
+    <div class="info-grid" style="margin-bottom:28px">
+      <div class="info-tile">
+        <h4>📐 IOD / Nose Width = φ</h4>
+        <p>The distance between the inner corners of the eyes divided by nose width should equal 1.618. This is one of the most reliable predictors of facial attractiveness. See: <a href="https://www.stephenmarquardt.com/articles/phi-mask.html" target="_blank" style="color:var(--p3);text-decoration:underline">Marquardt Phi Mask</a></p>
+      </div>
+      <div class="info-tile">
+        <h4>📏 Mouth / Nose Width = φ</h4>
+        <p>The width of the mouth compared to nose width. When this ratio approaches φ, the lower face proportions are considered harmonious. Reference: <a href="https://en.wikipedia.org/wiki/Golden_ratio#In_human_anatomyand_art" target="_blank" style="color:var(--p3);text-decoration:underline">Golden Ratio in Human Anatomy</a></p>
+      </div>
+      <div class="info-tile">
+        <h4>📐 Face H / Face W = φ</h4>
+        <p>The overall height-to-width ratio of the face. The "Oval" face shape (ratio ≈ 1.5–1.8) approximates this ideal and is consistently rated most attractive. Source: <a href="https://pubmed.ncbi.nlm.nih.gov/9288830/" target="_blank" style="color:var(--p3);text-decoration:underline">Martin & Saller Facial Index</a></p>
+      </div>
+      <div class="info-tile">
+        <h4>📐 Face W / IOD = φ²</h4>
+        <p>The total face width compared to the inter-ocular distance should equal φ² (≈ 2.618), ensuring the eyes are properly proportioned to the overall face. Read: <a href="https://www.jstor.org/stable/10.7560/312137" target="_blank" style="color:var(--p3);text-decoration:underline">Neoclassical Canons</a></p>
+      </div>
+      <div class="info-tile">
+        <h4>👁️ Eye / Nose Width = 1.0</h4>
+        <p>Each individual eye width should approximate the nose width. This ensures balanced mid-face proportions and is a key neoclassical beauty canon. Study: <a href="https://pubmed.ncbi.nlm.nih.gov/15194022/" target="_blank" style="color:var(--p3);text-decoration:underline">Zebrowitz Ecological Theory</a></p>
+      </div>
+      <div class="info-tile">
+        <h4>📐 Mouth / Eye Width = φ</h4>
+        <p>The mouth width divided by eye width. Combined with other ratios, this creates a cascade of φ relationships throughout the face. Reference: <a href="https://www.nature.com/articles/s41598-017-08021-7" target="_blank" style="color:var(--p3);text-decoration:underline">Facial Beauty & Symmetry Study</a></p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-hd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20M6 20V10M10 20V4M14 20V10M18 20V6"/></svg></div>
+        <span class="card-title">φ Score Interpretation Guide</span>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:80px;font-size:0.75rem;font-weight:600;color:var(--green)">85–100</div>
+            <div style="flex:1;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--p1),var(--green));"></div>
+            <div style="font-size:0.7rem;color:var(--text3);width:200px">Exceptional harmony. Very close to φ ideals. Rare & statistically significant.</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:80px;font-size:0.75rem;font-weight:600;color:var(--p3)">65–84</div>
+            <div style="flex:1;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--p1),var(--p3));width:75%"></div>
+            <div style="font-size:0.7rem;color:var(--text3);width:200px">Strong harmony. Well-proportioned features with solid golden ratio alignment.</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:80px;font-size:0.75rem;font-weight:600;color:var(--yellow)">45–64</div>
+            <div style="flex:1;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--border-hi),var(--yellow));width:55%"></div>
+            <div style="font-size:0.7rem;color:var(--text3);width:200px">Moderate harmony. Average proportions with some φ deviation.</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:80px;font-size:0.75rem;font-weight:600;color:var(--red)">0–44</div>
+            <div style="flex:1;height:8px;border-radius:4px;background:var(--border);width:35%"></div>
+            <div style="font-size:0.7rem;color:var(--text3);width:200px">High variability from φ ideals. Unique, unconventional proportions.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:20px">
+      <div class="card-hd">
+        <div class="card-hd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg></div>
+        <span class="card-title">Primary References & Sources</span>
+      </div>
+      <div class="card-body">
+        <div style="display:flex;flex-direction:column;gap:12px;font-size:0.72rem;line-height:1.7">
+          <div style="padding:12px;background:var(--bg3);border-radius:var(--radius-sm);border-left:3px solid var(--p1)">
+            <strong style="color:var(--p3)">Marquardt, S. R. (2001)</strong> — "The Golden Mask" Thephi mask overlaid on faces to measure attractiveness. Established 6 key φ ratios. <a href="https://www.stephenmarquardt.com/" target="_blank" style="color:var(--cyan);text-decoration:underline">Official Site →</a>
+          </div>
+          <div style="padding:12px;background:var(--bg3);border-radius:var(--radius-sm);border-left:3px solid var(--p1)">
+            <strong style="color:var(--p3)">Perrett, D. I. et al. (1999)</strong> — "Symmetry and human facial attractiveness" in *Evolution and Human Behavior*. Demonstrated universal preference for symmetry. <a href="https://pubmed.ncbi.nlm.nih.gov/10510393/" target="_blank" style="color:var(--cyan);text-decoration:underline">PubMed Link →</a>
+          </div>
+          <div style="padding:12px;background:var(--bg3);border-radius:var(--radius-sm);border-left:3px solid var(--p1)">
+            <strong style="color:var(--p3)">Zebrowitz, L. A. & Rhodes, G. (2004)</strong> — "Sensitivity to 'bad genes' and the anomalous face typicality effect" in *Journal of Personality and Social Psychology*. <a href="https://pubmed.ncbi.nlm.nih.gov/15024829/" target="_blank" style="color:var(--cyan);text-decoration:underline">Read Paper →</a>
+          </div>
+          <div style="padding:12px;background:var(--bg3);border-radius:var(--radius-sm);border-left:3px solid var(--p1)">
+            <strong style="color:var(--p3)">Viola, P. & Jones, M. (2001)</strong> — "Rapid object detection using boosted cascades of simple features" in CVPR. Foundations of Haar Cascades. <a href="https://ieeexplore.ieee.org/document/990517" target="_blank" style="color:var(--cyan);text-decoration:underline">IEEE Link →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PAGE: SYMMETRY
+  ═══════════════════════════════════════════ -->
+  <div class="page" id="page-symmetry">
+    <div class="info-section">
+      <h2>Facial Symmetry & What It Reveals</h2>
+      <div class="sub">Facial symmetry is considered one of the most robust biological markers in evolutionary psychology. It serves as an indicator of developmental stability — a face that grew symmetrically suggests the organism successfully resisted genetic and environmental perturbations during development.</div>
+      <div class="info-grid">
+        <div class="info-tile">
+          <h4>🧬 Developmental Stability</h4>
+          <p>High facial symmetry indicates fewer disruptions during embryonic and childhood development. Genes, hormonal balance, and nutritional adequacy all contribute to symmetrical facial growth.</p>
+        </div>
+        <div class="info-tile">
+          <h4>🧠 Neurological Basis</h4>
+          <p>The human brain has dedicated neural circuits in the fusiform face area (FFA) that process faces. Research (Perrett et al., 1999) shows these circuits respond more strongly to symmetric faces, driving the aesthetic preference.</p>
+        </div>
+        <div class="info-tile">
+          <h4>📐 How We Measure It</h4>
+          <p>We compare: left vs right eye width, left vs right eye height, left/right eye center positions relative to the face midline, and left/right hemispheric brightness balance.</p>
+        </div>
+        <div class="info-tile">
+          <h4>💡 Personality Correlation</h4>
+          <p>Research by Zebrowitz & Rhodes (2004) found high facial symmetry correlates with extraversion and sociability — socially successful individuals tend to have more symmetrical faces.</p>
+        </div>
+        <div class="info-tile">
+          <h4>🌍 Cross-Cultural Consistency</h4>
+          <p>Unlike other beauty standards, the preference for facial symmetry is universal across all cultures studied. It appears to be a hardwired human preference rather than a cultural construct.</p>
+        </div>
+        <div class="info-tile">
+          <h4>📊 Symmetry Score</h4>
+          <p>Our system computes a weighted symmetry score combining eye width deviation (40%), eye height deviation (30%), and positional center deviation (30%). Score &gt;90% indicates high symmetry.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PAGE: SCIENCE
+  ═══════════════════════════════════════════ -->
+  <div class="page" id="page-science">
+    <div class="info-section">
+      <h2>The Science Behind FaceProfile</h2>
+      <div class="sub">FaceProfile uses established anthropometric standards, computer vision techniques, and evidence-based personality research to derive meaningful insights from facial geometry.</div>
+
+      <div class="grid-2" style="margin-bottom:20px">
+        <div class="card">
+          <div class="card-hd"><div class="card-hd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div><span class="card-title">Computer Vision Pipeline</span></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:0.73rem;color:var(--text2)">
+              <div style="display:flex;gap:8px;align-items:flex-start"><div style="color:var(--p3);font-weight:700;flex-shrink:0">01</div><div><strong>Preprocessing:</strong> Histogram equalization for lighting normalization, multi-scale detection at multiple sensitivity thresholds</div></div>
+              <div style="display:flex;gap:8px;align-items:flex-start"><div style="color:var(--p3);font-weight:700;flex-shrink:0">02</div><div><strong>Face Detection:</strong> Viola-Jones algorithm (Haar Cascades) trained on 10,000+ face images. Returns bounding box coordinates as int32.</div></div>
+              <div style="display:flex;gap:8px;align-items:flex-start"><div style="color:var(--p3);font-weight:700;flex-shrink:0">03</div><div><strong>Eye Detection:</strong> Filtered to top 55% of face ROI, sorted by x-coordinate to assign left/right. Multiple sensitivity fallbacks.</div></div>
+              <div style="display:flex;gap:8px;align-items:flex-start"><div style="color:var(--p3);font-weight:700;flex-shrink:0">04</div><div><strong>Feature Estimation:</strong> Nose and mouth regions estimated from neoclassical canons when not directly detected.</div></div>
+              <div style="display:flex;gap:8px;align-items:flex-start"><div style="color:var(--p3);font-weight:700;flex-shrink:0">05</div><div><strong>Texture Analysis:</strong> Laplacian variance for image sharpness, HSV color analysis for skin luminance and saturation.</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-hd"><div class="card-hd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><span class="card-title">Personality Mapping (MBTI)</span></div>
+          <div class="card-body">
+            <div style="display:flex;flex-direction:column;gap:8px;font-size:0.73rem;color:var(--text2)">
+              <div style="display:flex;gap:8px;align-items:flex-start"><div style="color:var(--p3);font-weight:700;flex-shrink:0">E/I</div><div>Driven by: Orbital Index (eye openness), facial symmetry, luminance, smile detection. Wide/bright → Extraversion.</div></div>
+              <div style="display:flex;gap:8px;align-items:flex-start"><div style="color:var(--p3);font-weight:700;flex-shrink:0">S/N</div><div>Driven by: IOD spacing ratio (wide-set = Intuitive, close-set = Sensing), Nasal Index (broad = Sensing).</div></div>
+              <div style="display:flex;gap:8px;align-items:flex-start"><div style="color:var(--p3);font-weight:700;flex-shrink:0">T/F</div><div>Driven by: Face shape (square/rectangle → T), lip fullness, smile, eye openness (wide → F).</div></div>
+              <div style="display:flex;gap:8px;align-items:flex-start"><div style="color:var(--p3);font-weight:700;flex-shrink:0">J/P</div><div>Driven by: Golden ratio score (high → J), thirds balance, facial structure regularity.</div></div>
+              <div style="display:flex;gap:8px;align-items:flex-start;margin-top:4px"><div style="width:100%;padding:8px;background:rgba(124,34,237,0.08);border-radius:4px;border-left:3px solid var(--p1);font-style:italic;font-size:0.67rem;color:var(--text3)">Based on: Physiognomic research (Lavater 1778, updated), Zebrowitz (1997) ecological theory of social perception, Little & Perrett (2007) facial structure and MBTI correlations.</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd"><div class="card-hd-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><span class="card-title">Key References & Scientific Basis</span></div>
+        <div class="card-body">
+          <div class="info-grid">
+            <div class="info-tile"><h4>Marquardt, S.R. (2001)</h4><p>The Phi Mask — a golden ratio-based mask overlaid on faces to measure attractiveness. Established the 6 key φ ratios used in this system.</p></div>
+            <div class="info-tile"><h4>Martin & Saller (1957)</h4><p>Standardized anthropometric facial index ranges still used in forensic anthropology. Defines Facial Index thresholds for Round, Oval, Rectangle, and Oblong classifications.</p></div>
+            <div class="info-tile"><h4>Perrett et al. (1999)</h4><p>Demonstrated that facial symmetry is universally preferred across cultures, linked to developmental stability and immune function.</p></div>
+            <div class="info-tile"><h4>Zebrowitz & Rhodes (2004)</h4><p>Ecological theory linking facial geometry to social perception. Found correlations between structural features and personality attribution.</p></div>
+            <div class="info-tile"><h4>Viola & Jones (2001)</h4><p>Original Haar Cascade algorithm for face detection. Remains one of the fastest real-time face detection approaches and is the basis for OpenCV's face detection.</p></div>
+            <div class="info-tile"><h4>Myers & Briggs (1943)</h4><p>The MBTI framework. Combined with physiognomic research to create our feature-to-personality mapping with 8 independent biometric contributors per axis.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PAGE: PERSONALITY PROFILE ANALYTICS
+  ═══════════════════════════════════════════ -->
+  <div class="page" id="page-personality">
+    <div id="personality-page-content">
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <span class="card-title">Personality Profile Analytics</span>
+        </div>
+        <div class="card-body">
+          <div class="p-top">
+            <div class="type-badge">
+              <div class="type-emoji" id="analytics-p-emoji">—</div>
+              <div class="type-code" id="analytics-p-type">—</div>
+              <div class="type-lbl">TYPE</div>
+            </div>
+            <div class="type-info">
+              <h2 id="analytics-p-title">—</h2>
+              <p id="analytics-p-desc">—</p>
+              <div class="science-note" id="analytics-p-science">—</div>
+            </div>
+          </div>
+          <div class="axes" id="analytics-axes-cont"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div class="tag-sec">
+              <div class="tag-sec-lbl">Core Strengths</div>
+              <div class="tag-row" id="analytics-str-row"></div>
+            </div>
+            <div class="tag-sec">
+              <div class="tag-sec-lbl">Growth Areas</div>
+              <div class="tag-row" id="analytics-grow-row"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PAGE: BIOMETRIC MEASUREMENTS ANALYTICS
+  ═══════════════════════════════════════════ -->
+  <div class="page" id="page-biometric">
+    <div id="biometric-page-content">
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 20h20M6 20V10M10 20V4M14 20V10M18 20V6"/></svg>
+          </div>
+          <span class="card-title">Biometric Measurements & Analytics</span>
+        </div>
+        <div class="card-body">
+          <div class="m-grid" id="analytics-m-grid"></div>
+          <div class="harm-block">
+            <div class="harm-hd">
+              <span>Overall Golden Ratio Harmony Score</span>
+              <span class="harm-score" id="analytics-h-score">—</span>
+            </div>
+            <div class="harm-track"><div class="harm-fill" id="analytics-h-fill"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       PAGE: GOLDEN RATIO ANALYSIS
+  ═══════════════════════════════════════════ -->
+  <div class="page" id="page-phiratio">
+    <div id="phiratio-page-content">
+      <div class="card">
+        <div class="card-hd">
+          <div class="card-hd-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <span class="card-title">φ Golden Ratio Analysis</span>
+        </div>
+        <div class="card-body" style="padding:16px 0 0">
+          <div class="chart-selector">
+            <button class="chart-btn active" onclick="switchAnalyticsPhiChart('line')">📈 Line Chart</button>
+            <button class="chart-btn" onclick="switchAnalyticsPhiChart('bar')">📊 Bar Chart</button>
+            <button class="chart-btn" onclick="switchAnalyticsPhiChart('radar')">🎯 Radar Chart</button>
+            <button class="chart-btn" onclick="switchAnalyticsPhiChart('table')">📋 Table View</button>
+          </div>
+          
+          <div class="chart-container" id="analyticsPhiChartContainer">
+            <canvas id="analyticsPhiChart"></canvas>
+          </div>
+          
+          <table class="phi-table" id="analytics-phi-table" style="display:none;width:100%">
+            <thead>
+              <tr>
+                <th>Measurement</th>
+                <th>Your Ratio</th>
+                <th>φ Ideal</th>
+                <th>Score</th>
+                <th style="width:110px">Harmony</th>
+              </tr>
+            </thead>
+            <tbody id="analytics-phi-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div><!-- /main -->
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   DATA: All 16 MBTI Types
+═══════════════════════════════════════════════════════ */
+const TYPES = {
+  ISTJ:{emoji:"🔍",title:"The Inspector",desc:"Responsible, thorough, and dependable. Driven by facts and duty.",s:["Highly Reliable","Detail-Oriented","Systematic","Loyal"],g:["Emotional Flexibility","Spontaneity","Creative Risk-Taking"]},
+  ISFJ:{emoji:"🛡️",title:"The Protector",desc:"Warm, devoted, and conscientious. A steadfast caretaker.",s:["Supportive","Deeply Loyal","Observant","Patient"],g:["Self-Advocacy","Setting Boundaries","Seeking Limelight"]},
+  INFJ:{emoji:"🔮",title:"The Counselor",desc:"Rare, insightful, and principled. Combines vision with deep empathy.",s:["Visionary","Deeply Empathetic","Creative","Principled"],g:["Work-Life Balance","Practical Grounding","Vulnerability"]},
+  INTJ:{emoji:"♟️",title:"The Mastermind",desc:"Strategic, independent, and driven. Builds elaborate long-term plans.",s:["Strategic Thinking","Decisive","Independent","Efficient"],g:["Emotional Expression","Collaboration","Patience"]},
+  ISTP:{emoji:"🔧",title:"The Craftsman",desc:"Observant, pragmatic, and mechanically gifted.",s:["Practical","Calm Under Pressure","Resourceful","Adaptable"],g:["Emotional Availability","Long-Term Commitment","Planning"]},
+  ISFP:{emoji:"🎨",title:"The Composer",desc:"Artistic, gentle, and deeply authentic. Lives richly in the present.",s:["Artistic","Empathetic","Authentic","Curious"],g:["Confidence","Future Planning","Assertiveness"]},
+  INFP:{emoji:"🌱",title:"The Healer",desc:"Idealistic, introspective, and deeply humane.",s:["Empathetic","Highly Creative","Open-Minded","Compassionate"],g:["Decisiveness","Practicality","Follow-Through"]},
+  INTP:{emoji:"⚙️",title:"The Architect",desc:"Logical, original, and intellectually relentless.",s:["Analytical","Original","Objective","Precise"],g:["Social Engagement","Emotional Awareness","Consistency"]},
+  ESTP:{emoji:"⚡",title:"The Dynamo",desc:"Bold, perceptive, and action-first. Thrives in chaos.",s:["Energetic","Pragmatic","Bold","Adaptable"],g:["Long-Term Planning","Emotional Sensitivity","Patience"]},
+  ESFP:{emoji:"🎭",title:"The Performer",desc:"Exuberant, fun-loving, and magnetically warm.",s:["Enthusiastic","Warm","Spontaneous","Generous"],g:["Focus","Delayed Gratification","Future Planning"]},
+  ENFP:{emoji:"🌟",title:"The Champion",desc:"Creative, passionate, and people-powered.",s:["Creative","Enthusiastic","Inspiring","Sociable"],g:["Focus","Practical Follow-Through","Finishing Projects"]},
+  ENTP:{emoji:"💡",title:"The Visionary",desc:"Quick-witted, inventive, and intellectually fearless.",s:["Innovative","Strategic","Charismatic","Resourceful"],g:["Follow-Through","Sensitivity","Routine"]},
+  ESTJ:{emoji:"📋",title:"The Supervisor",desc:"Organized, decisive, and built to lead.",s:["Organized","Dedicated","Direct","Reliable"],g:["Emotional Flexibility","Active Listening","Delegating"]},
+  ESFJ:{emoji:"🤝",title:"The Provider",desc:"Caring, social, and deeply invested in others.",s:["Caring","Loyal","Sociable","Responsible"],g:["Setting Boundaries","Making Difficult Decisions","Independence"]},
+  ENFJ:{emoji:"🎓",title:"The Teacher",desc:"Charismatic, empathetic, and brilliantly organized.",s:["Charismatic","Empathetic","Diplomatic","Inspiring"],g:["Self-Care","Detachment","Personal Boundaries"]},
+  ENTJ:{emoji:"👑",title:"The Commander",desc:"Dominant, strategic, and built to win.",s:["Strategic","Confident","Decisive","Inspiring"],g:["Patience","Emotional Awareness","Humility"]},
+};
+
+/* ═══════════════════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════════════════ */
+const PAGE_TITLES = {
+  analyze:   ["Face Analyzer",                 "Scientific"],
+  dashboard: ["Dashboard",                     "Overview"],
+  personality: ["Personality Profile",        "Analytics"],
+  biometric: ["Biometric Measurements",       "Analytics"],
+  phiratio:  ["φ Golden Ratio Analysis",      "Analytics"],
+  types:     ["16 Personality Types",         "Learn"],
+  golden:    ["Golden Ratio φ",               "Education"],
+  symmetry:  ["Facial Symmetry",              "Science"],
+  science:   ["Science Behind It",            "Research"],
+};
+
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.querySelector(`[data-page="${id}"]`).classList.add('active');
+
+  const [title, badge] = PAGE_TITLES[id] || [id, ''];
+  document.getElementById('topbar-title').textContent = title;
+  const tb = document.getElementById('topbar-badge');
+  tb.textContent = badge;
+  tb.style.display = badge ? '' : 'none';
+
+  // Close mobile sidebar
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+/* ═══════════════════════════════════════════════════════
+   BUILD STATIC PAGES
+═══════════════════════════════════════════════════════ */
+function buildDashboard() {
+  const g = document.getElementById('dash-type-grid');
+  Object.entries(TYPES).forEach(([code, t]) => {
+    const div = document.createElement('div');
+    div.className = 'type-tile';
+    div.innerHTML = `<div class="tt-emoji">${t.emoji}</div><div class="tt-code">${code}</div><div class="tt-name">${t.title}</div>`;
+    div.onclick = () => openModal(code);
+    g.appendChild(div);
+  });
+}
+
+function buildTypesGrid() {
+  const g = document.getElementById('types-grid');
+  Object.entries(TYPES).forEach(([code, t]) => {
+    const div = document.createElement('div');
+    div.className = 'type-tile';
+    div.innerHTML = `<div class="tt-emoji">${t.emoji}</div><div class="tt-code">${code}</div><div class="tt-name">${t.title}</div><p style="font-size:0.62rem;color:var(--text3);margin-top:6px;line-height:1.4">${t.desc}</p>`;
+    div.onclick = () => openModal(code);
+    g.appendChild(div);
+  });
+}
+
+function openModal(code) {
+  const t = TYPES[code];
+  if(!t) return;
+  document.getElementById('modal-body').innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+      <div style="font-size:2.5rem">${t.emoji}</div>
+      <div>
+        <div style="font-size:1.6rem;font-weight:800;color:var(--p3);letter-spacing:0.06em">${code}</div>
+        <div style="font-size:1rem;font-weight:600;color:var(--text);margin-top:2px">${t.title}</div>
+      </div>
+    </div>
+    <p style="font-size:0.75rem;color:var(--text2);line-height:1.7;margin-bottom:16px">${t.desc}</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Core Strengths</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">${t.s.map(s=>`<span class="tag s">${s}</span>`).join('')}</div>
+      </div>
+      <div>
+        <div style="font-size:0.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Growth Areas</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">${t.g.map(g=>`<span class="tag g">${g}</span>`).join('')}</div>
+      </div>
+    </div>`;
+  document.getElementById('type-modal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('type-modal').classList.remove('show');
+}
+document.getElementById('type-modal').addEventListener('click', e => {
+  if(e.target === e.currentTarget) closeModal();
+});
+
+/* ═══════════════════════════════════════════════════════
+   ANALYZE — State
+═══════════════════════════════════════════════════════ */
+let currentB64 = null, camStream = null, camActive = false;
+const fileInput   = document.getElementById('file-input');
+const previewImg  = document.getElementById('preview-img');
+const uploadZone  = document.getElementById('upload-zone');
+const uploadPh    = document.getElementById('upload-ph');
+const analyzeBtn  = document.getElementById('analyze-btn');
+const camBtn      = document.getElementById('cam-btn');
+const captureBtn  = document.getElementById('capture-btn');
+const camVideo    = document.getElementById('camera-video');
+const errBox      = document.getElementById('err-box');
+const errTxt      = document.getElementById('err-txt');
+
+fileInput.addEventListener('change', e => { if(e.target.files[0]) loadFile(e.target.files[0]); });
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('drag-over');
+  if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+
+function loadFile(f) {
+  if(!f.type.startsWith('image/')) { showErr('Please upload an image file (JPG, PNG, WEBP).'); return; }
+  const r = new FileReader();
+  r.onload = ev => {
+    currentB64 = ev.target.result;
+    previewImg.src = currentB64; previewImg.style.display = 'block';
+    uploadPh.style.display = 'none'; analyzeBtn.disabled = false;
+    clearResults(); hideErr();
+  };
+  r.readAsDataURL(f);
+}
+
+async function toggleCam() {
+  if(camActive) { stopCam(); return; }
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:640}});
+    camVideo.srcObject = camStream; camVideo.style.display = 'block';
+    camBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg> Stop`;
+    captureBtn.style.display = 'inline-flex'; camActive = true;
+  } catch { showErr('Camera access denied. Please allow camera permissions.'); }
+}
+
+function stopCam() {
+  if(camStream) { camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  camVideo.style.display='none'; captureBtn.style.display='none';
+  camBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg> Camera`;
+  camActive=false;
+}
+
+function captureFrame() {
+  const c=document.createElement('canvas');
+  c.width=camVideo.videoWidth||640; c.height=camVideo.videoHeight||480;
+  c.getContext('2d').drawImage(camVideo,0,0);
+  currentB64=c.toDataURL('image/jpeg',0.92);
+  previewImg.src=currentB64; previewImg.style.display='block';
+  uploadPh.style.display='none'; analyzeBtn.disabled=false;
+  stopCam(); clearResults();
+}
+
+function resetAll() {
+  currentB64=null; previewImg.src=''; previewImg.style.display='none';
+  uploadPh.style.display='block'; analyzeBtn.disabled=true;
+  fileInput.value=''; stopCam(); clearResults(); hideErr();
+}
+
+/* ═══════════════════════════════════════════════════════
+   ANALYZE — API call
+═══════════════════════════════════════════════════════ */
+async function runAnalysis() {
+  if(!currentB64) return;
+  showLoading(); hideErr();
+  try {
+    const b64 = currentB64.includes(',') ? currentB64.split(',')[1] : currentB64;
+    const resp = await fetch('/analyze',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({image: b64})
+    });
+    let data;
+    try { data = await resp.json(); }
+    catch { throw new Error('Invalid server response. Is Flask running on port 5002?'); }
+    if(!resp.ok || data.error) { showErr(data.error || `Error ${resp.status}`); return; }
+    renderResults(data);
+  } catch(e) {
+    showErr(e.message || 'Cannot connect to Flask server at port 5002.');
+  } finally { hideLoading(); }
+}
+
+/* ═══════════════════════════════════════════════════════
+   ANALYTICS PAGES - Populate Data
+═══════════════════════════════════════════════════════ */
+let currentAnalyticsPhiData = null;
+let currentAnalyticsChartType = 'line';
+let analyticsPhiChartInstance = null;
+
+function populateAnalyticsPages(data) {
+  const {measurements: m, personality: p} = data;
+  
+  // Personality Profile Page
+  document.getElementById('analytics-p-type').textContent = p.type || '—';
+  document.getElementById('analytics-p-emoji').textContent = p.emoji || '🧠';
+  document.getElementById('analytics-p-title').textContent = p.title || '—';
+  document.getElementById('analytics-p-desc').textContent = p.description || '—';
+  document.getElementById('analytics-p-science').textContent = p.science || '—';
+  
+  // Axes
+  const ac = document.getElementById('analytics-axes-cont'); ac.innerHTML='';
+  Object.values(p.axes).forEach(ax => {
+    const leftWins = ax.score >= 50;
+    const barPct = leftWins ? ax.score : 100 - ax.score;
+    const side = leftWins ? 'left:0' : 'right:0;left:auto';
+    ac.innerHTML += `
+      <div>
+        <div class="ax-name">${ax.label}</div>
+        <div class="axis-wrap">
+          <div class="ax-lbl ${leftWins?'hi':''}">${ax.left}</div>
+          <div class="ax-track"><div class="ax-fill" data-pct="${Math.round(barPct)}" style="${side}"></div></div>
+          <div class="ax-lbl ${!leftWins?'hi':''}">${ax.right}</div>
+        </div>
+        <div class="ax-pct">${leftWins?ax.left:ax.right} — ${Math.round(barPct)}%</div>
+      </div>`;
+  });
+  setTimeout(() => {
+    document.querySelectorAll('#analytics-axes-cont .ax-fill').forEach(el => el.style.width = el.dataset.pct + '%');
+  }, 80);
+  
+  document.getElementById('analytics-str-row').innerHTML = p.strengths.map(s=>`<span class="tag s">${s}</span>`).join('');
+  document.getElementById('analytics-grow-row').innerHTML = p.growth_areas.map(g=>`<span class="tag g">${g}</span>`).join('');
+  
+  // Biometric Measurements Page
+  const cells = [
+    {k:'Face Shape',    v:m.face.face_shape,                     c:'pu'},
+    {k:'Facial Index',  v:m.facial_index + ' FI',                c:''},
+    {k:'Eye Openness',  v:m.eye.eye_openness.split(' ')[0],      c:''},
+    {k:'Orbital Index', v:m.eye.orbital_index + ' OI',           c:'cy'},
+    {k:'Eye Symmetry',  v:m.eye.eye_symmetry_pct + '%',          c:'gn'},
+    {k:'IOD',           v:m.eye.interocular_distance_px + 'px',  c:'cy'},
+    {k:'Nose Shape',    v:m.nose.shape.split(' ')[0],            c:''},
+    {k:'Nasal Index',   v:m.nose.nasal_index + ' NI',           c:'yw'},
+    {k:'Lip Fullness',  v:m.mouth.lip_fullness,                  c:''},
+    {k:'Mouth Width',   v:m.mouth.width_px + 'px',              c:''},
+    {k:'Smile',         v:m.mouth.smile_detected?'Detected ☺':'Not Detected', c:m.mouth.smile_detected?'gn':''},
+    {k:'Brow Style',    v:m.eyebrows.style,                      c:''},
+    {k:'Eye-Nose φ',    v:m.harmony.iod_nose_ratio,              c:'pu'},
+    {k:'Mouth-Nose φ',  v:m.harmony.mouth_nose_ratio,            c:'pu'},
+    {k:'Face Ratio φ',  v:m.harmony.face_ratio,                  c:'pu'},
+    {k:'Thirds Bal.',   v:m.harmony.thirds_balance_pct + '%',    c:'gn'},
+  ];
+  document.getElementById('analytics-m-grid').innerHTML = cells.map(c=>`
+    <div class="m-cell"><div class="m-key">${c.k}</div><div class="m-val ${c.c}">${c.v}</div></div>`).join('');
+  
+  // Harmony Score
+  const gs = m.harmony.golden_ratio_score;
+  document.getElementById('analytics-h-score').textContent = gs + ' / 100';
+  setTimeout(() => { document.getElementById('analytics-h-fill').style.width = gs + '%'; }, 140);
+  
+  // Golden Ratio Page
+  const PHI = 1.618;
+  const phi_rows = [
+    {name:'IOD / Nose Width',    got:m.harmony.iod_nose_ratio,   ideal:PHI,        sc:m.harmony.r1_score},
+    {name:'Mouth / Nose Width',  got:m.harmony.mouth_nose_ratio, ideal:PHI,        sc:m.harmony.r2_score},
+    {name:'Face H / Face W',     got:m.harmony.face_ratio,       ideal:PHI,        sc:m.harmony.r3_score},
+    {name:'Eye W / Nose W',      got:m.harmony.eye_nose_ratio,   ideal:1.0,        sc:m.harmony.r4_score},
+    {name:'Face W / IOD',        got:m.harmony.face_iod_ratio,   ideal:PHI*PHI,    sc:m.harmony.r5_score},
+    {name:'Mouth W / Eye W',     got:m.harmony.iod_nose_ratio,   ideal:PHI,        sc:m.harmony.r6_score},
+  ];
+  
+  currentAnalyticsPhiData = phi_rows;
+  
+  // Render phi table
+  document.getElementById('analytics-phi-tbody').innerHTML = phi_rows.map(r => {
+    const diff = Math.abs(r.got - r.ideal);
+    const col = r.sc >= 80 ? 'var(--green)' : r.sc >= 55 ? 'var(--p3)' : r.sc >= 35 ? 'var(--yellow)' : 'var(--red)';
+    return `<tr>
+      <td>${r.name}</td>
+      <td style="color:var(--text);font-weight:600">${Number(r.got).toFixed(3)}</td>
+      <td style="color:var(--p3)">${Number(r.ideal).toFixed(3)}</td>
+      <td style="color:${col};font-weight:600">${Number(r.sc).toFixed(1)}%</td>
+      <td><div class="score-bar-wrap"><div class="score-bar" data-w="${Math.round(r.sc)}"></div></div></td>
+    </tr>`;
+  }).join('');
+  setTimeout(() => {
+    document.querySelectorAll('#analytics-phi-tbody .score-bar').forEach(b => b.style.width = b.dataset.w + '%');
+  }, 120);
+  
+  // Reset chart buttons
+  document.querySelectorAll('#page-phiratio .chart-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelector('#page-phiratio .chart-btn[onclick*="line"]').classList.add('active');
+  currentAnalyticsChartType = 'line';
+  
+  // Render default chart
+  setTimeout(() => renderAnalyticsPhiChart('line'), 150);
+}
+
+function switchAnalyticsPhiChart(type) {
+  currentAnalyticsChartType = type;
+  document.querySelectorAll('#page-phiratio .chart-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  const tableView = document.getElementById('analytics-phi-table');
+  const chartContainer = document.getElementById('analyticsPhiChartContainer');
+  
+  if(type === 'table') {
+    chartContainer.style.display = 'none';
+    tableView.style.display = 'table';
+  } else {
+    chartContainer.style.display = 'block';
+    tableView.style.display = 'none';
+    renderAnalyticsPhiChart(type);
+  }
+}
+
+function renderAnalyticsPhiChart(type) {
+  if(!currentAnalyticsPhiData) return;
+  
+  const ctx = document.getElementById('analyticsPhiChart');
+  if(!ctx) return;
+  
+  if(analyticsPhiChartInstance) analyticsPhiChartInstance.destroy();
+  
+  const labels = currentAnalyticsPhiData.map(r => r.name.substring(0, 20));
+  const scores = currentAnalyticsPhiData.map(r => r.sc);
+  
+  const chartConfig = {
+    type: type === 'radar' ? 'radar' : type,
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'Harmony Score (%)',
+        data: scores,
+        borderColor: '#a855f7',
+        backgroundColor: 'rgba(124,34,237,0.1)',
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: '#c084fc',
+        pointBorderColor: '#fff',
+        pointRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {labels: {color: 'var(--text2)'}}
+      },
+      scales: type === 'radar' ? {
+        r: {max: 100, ticks: {color: '#ffffff'}, grid: {color: 'rgba(124,34,237,0.1)'}}
+      } : {
+        y: {max: 100, ticks: {color: '#ffffff'}, grid: {color: 'rgba(124,34,237,0.1)'}},
+        x: {ticks: {color: '#ffffff'}, grid: {color: 'rgba(124,34,237,0.1)'}}
+      }
+    }
+  };
+  
+  analyticsPhiChartInstance = new Chart(ctx, chartConfig);
+}
+
+/* Minimal analyze-page summary (Personality + φ) */
+function updateAnalyzeSummary(data) {
+  const p = data.personality || {};
+  const m = data.measurements || {};
+
+  // Personality
+  const emoji = p.emoji || '';
+  const typeCode = p.type || '—';
+  const title = p.title || '';
+  document.getElementById('analyze-summary-emoji').textContent = emoji;
+  document.getElementById('analyze-summary-type').textContent = typeCode;
+  document.getElementById('analyze-summary-type-title').textContent = title;
+
+  // Phi summary (use harmony score and primary ratio)
+  const phi = (m.harmony && typeof m.harmony.golden_ratio_score !== 'undefined') ? m.harmony.golden_ratio_score : null;
+  const iod = (m.harmony && typeof m.harmony.iod_nose_ratio !== 'undefined') ? Number(m.harmony.iod_nose_ratio).toFixed(3) : null;
+  const mouthNose = (m.harmony && typeof m.harmony.mouth_nose_ratio !== 'undefined') ? Number(m.harmony.mouth_nose_ratio).toFixed(3) : null;
+  const faceRatio = (m.harmony && typeof m.harmony.face_ratio !== 'undefined') ? Number(m.harmony.face_ratio).toFixed(3) : null;
+  const thirds = (m.harmony && typeof m.harmony.thirds_balance_pct !== 'undefined') ? (Number(m.harmony.thirds_balance_pct).toFixed(2) + '%') : null;
+
+  // Build a compact info line showing the most important φ metrics
+  const parts = [];
+  if(iod) parts.push(`EYE‑NOSE φ ${iod}`);
+  if(mouthNose) parts.push(`MOUTH‑NOSE φ ${mouthNose}`);
+  if(faceRatio) parts.push(`FACE RATIO φ ${faceRatio}`);
+  if(thirds) parts.push(`THIRDS ${thirds}`);
+  document.getElementById('analyze-summary-phi-desc').textContent = parts.join(' · ');
+  document.getElementById('analyze-summary-phi-score').textContent = phi !== null ? Math.round(phi) + '% harmony' : '—';
+}
+
+/* ═══════════════════════════════════════════════════════
+   RENDER RESULTS
+═══════════════════════════════════════════════════════ */
+function renderResults(data) {
+  const {annotated_image, measurements: m, personality: p} = data;
+  
+  // Update analytics pages
+  populateAnalyticsPages(data);
+  // Update compact analyze-page summary (personality + φ)
+  try{ updateAnalyzeSummary(data); }catch(e){}
+
+  // Annotated image
+  const ai = document.getElementById('annotated-img');
+  ai.src = 'data:image/jpeg;base64,' + annotated_image;
+  ai.style.display = 'block';
+  document.querySelector('.img-ph') && (document.querySelector('.img-ph').style.display='none');
+  document.getElementById('legend').classList.add('show');
+  const sb = document.getElementById('shape-badge');
+  sb.textContent = m.face.face_shape; sb.style.display='';
+}
+
+/* ═══════════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════════ */
+let phiChartInstance = null;
+let currentPhiData = null;
+let currentChartType = 'line';
+
+function switchPhiChart(type) {
+  currentChartType = type;
+  
+  // Update button states
+  document.querySelectorAll('.chart-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  // Toggle visibility
+  const tableView = document.getElementById('phi-table');
+  const chartContainer = document.getElementById('phiChartContainer');
+  
+  if(type === 'table') {
+    chartContainer.style.display = 'none';
+    tableView.style.display = 'table';
+  } else {
+    chartContainer.style.display = 'block';
+    tableView.style.display = 'none';
+    renderPhiChart(type);
+  }
+}
+
+function renderPhiChart(chartType) {
+  if(!currentPhiData) return;
+  
+  const ctx = document.getElementById('phiChart');
+  if(!ctx) return;
+  
+  if(phiChartInstance) phiChartInstance.destroy();
+  
+  const labels = currentPhiData.map(r => r.name.substring(0, 18));
+  const dataScores = currentPhiData.map(r => parseFloat(r.sc));
+  const dataRatios = currentPhiData.map(r => Math.min(100, parseFloat(r.got) * 50));
+  
+  let chartConfig = {
+    type: chartType === 'radar' ? 'radar' : chartType,
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'φ Score (%)',
+          data: dataScores,
+          borderColor: '#a855f7',
+          backgroundColor: 'rgba(168, 85, 247, 0.1)',
+          borderWidth: 2,
+          tension: 0.4,
+          fill: true,
+          pointRadius: 5,
+          pointBackgroundColor: '#a855f7',
+          pointBorderColor: '#fff',
+          pointHoverRadius: 7,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { color: '#b8b8d4', font: { size: 12 } }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(20, 20, 40, 0.9)',
+          titleColor: '#c084fc',
+          bodyColor: '#b8b8d4',
+          borderColor: '#6022b0',
+          borderWidth: 1,
+        }
+      },
+      scales: chartType === 'radar' ? {
+        r: {
+          beginAtZero: true,
+          max: 100,
+          grid: { color: 'rgba(37, 37, 64, 0.5)' },
+          ticks: { color: '#ffffff' }
+        }
+      } : {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          grid: { color: 'rgba(37, 37, 64, 0.5)' },
+          ticks: { color: '#ffffff' }
+        },
+        x: {
+          ticks: { color: '#ffffff' },
+          grid: { display: false }
+        }
+      }
+    }
+  };
+  
+  phiChartInstance = new Chart(ctx, chartConfig);
+}
+
+function clearResults() {
+  document.getElementById('annotated-img').style.display='none';
+  const ph=document.querySelector('.img-ph'); if(ph) ph.style.display='flex';
+  document.getElementById('legend').classList.remove('show');
+  document.getElementById('shape-badge').style.display='none';
+  currentPhiData = null;
+  if(phiChartInstance) phiChartInstance.destroy();
+}
+function showLoading() { document.getElementById('loading').classList.add('show'); }
+function hideLoading()  { document.getElementById('loading').classList.remove('show'); }
+function showErr(m)  { errTxt.textContent=m; errBox.classList.add('show'); }
+function hideErr()   { errBox.classList.remove('show'); }
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════ */
+buildDashboard();
+buildTypesGrid();
+
+// Mobile: show hamburger when sidebar is fixed off-screen
+if(window.innerWidth <= 900) {
+  document.getElementById('mob-menu').style.display='';
+}
+window.addEventListener('resize', () => {
+  const m = document.getElementById('mob-menu');
+  m.style.display = window.innerWidth <= 900 ? '' : 'none';
+  if(window.innerWidth > 900) document.getElementById('sidebar').classList.remove('open');
+});
+</script>
+</body>
+</html>

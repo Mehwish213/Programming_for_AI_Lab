@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather App 🌦️</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: "Poppins", sans-serif; }
+    body { background: linear-gradient(to right, #3a7bd5, #3a6073); color: white; height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .weather-container { background: rgba(255, 255, 255, 0.1); padding: 30px; border-radius: 20px; text-align: center; width: 320px; box-shadow: 0 0 20px rgba(255, 255, 255, 0.2); }
+    .input-section { margin: 20px 0; }
+    input { padding: 10px; border: none; border-radius: 8px; outline: none; width: 65%; }
+    button { padding: 6px 8px; margin-left: 6px; font-size: 13px; border: none; background-color: #00c6ff; color: white; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+    button:hover { background-color: #0072ff; }
+    .result { margin-top: 20px; font-size: 18px; }
+    .temp { font-size: 40px; font-weight: bold; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <div class="weather-container">
+    <h1>🌦️ Weather App</h1>
+    <div class="input-section">
+      <form method="POST">
+        <input type="text" name="cityInput" placeholder="Enter city name..." required>
+        <button type="submit">Get Weather</button>
+      </form>
+    </div>
+
+    <div class="result">
+      {% if error %}
+        <p>❌ {{ error }}</p>
+      {% elif weather %}
+        <h2>{{ weather.location }}</h2>
+        <img src="{{ weather.icon }}" alt="Weather icon">
+        <div class="temp">{{ weather.temp_c }}°C</div>
+        <p>{{ weather.condition }}</p>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>
