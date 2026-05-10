@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Bot - Book Recommendation System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation Bar -->
+        <nav class="navbar">
+            <div class="nav-content">
+                <div class="logo">
+                    <i class="fas fa-book"></i>
+                    <span>Library Bot</span>
+                </div>
+                <ul class="nav-links">
+                    <li><a href="#home">Home</a></li>
+                    <li><a href="#search">Search</a></li>
+                    <li><a href="#about">About</a></li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- Hero Section -->
+        <section class="hero" id="home">
+            <div class="hero-content">
+                <h1>Find Your Next Great Read</h1>
+                <p>Discover book recommendations powered by AI</p>
+            </div>
+        </section>
+
+        <!-- Search Section -->
+        <section class="search-section" id="search">
+            <div class="search-container">
+                <h2>Search for Books</h2>
+                <form method="POST" class="search-form" id="searchForm">
+                    <div class="search-input-wrapper">
+                        <input 
+                            type="text" 
+                            name="query" 
+                            class="search-input" 
+                            placeholder="Enter book title, author, or genre..."
+                            required
+                        >
+                        <button type="submit" class="search-btn">
+                            <i class="fas fa-search"></i> Search
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Results Section -->
+                <div class="results-section">
+                    {% if results %}
+                        <div class="results-header">
+                            <h3>Recommended Books</h3>
+                            <p class="results-count">Found {{ results|length }} recommendation(s)</p>
+                        </div>
+                        <div class="results-grid">
+                            {% for book in results %}
+                                <div class="book-card">
+                                    <div class="book-icon">
+                                        <i class="fas fa-book-open"></i>
+                                    </div>
+                                    <div class="book-info">
+                                        <h4 class="book-title">{{ book.title }}</h4>
+                                        <p class="book-author">
+                                            <span class="label">Author:</span> {{ book.author }}
+                                        </p>
+                                        {% if book.rating %}
+                                            <div class="book-rating">
+                                                <span class="label">Rating:</span>
+                                                <div class="stars">
+                                                    {% for i in range(5) %}
+                                                        <i class="fas fa-star {% if i < book.rating|int %}filled{% endif %}"></i>
+                                                    {% endfor %}
+                                                    <span class="rating-value">{{ "%.1f"|format(book.rating) }}/5</span>
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        {% if request.method == "POST" %}
+                            <div class="no-results">
+                                <i class="fas fa-search"></i>
+                                <p>No results found. Try a different search term.</p>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section class="about-section" id="about">
+            <div class="about-content">
+                <h2>About Library Bot</h2>
+                <div class="about-grid">
+                    <div class="about-card">
+                        <div class="about-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h3>AI-Powered</h3>
+                        <p>Uses advanced machine learning to understand book content and find similar recommendations.</p>
+                    </div>
+                    <div class="about-card">
+                        <div class="about-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <h3>Vast Library</h3>
+                        <p>Searches through thousands of books from the Goodbooks-10k dataset.</p>
+                    </div>
+                    <div class="about-card">
+                        <div class="about-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <h3>Fast & Accurate</h3>
+                        <p>FAISS-powered semantic search delivers instant, relevant results.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; 2024 Library Bot. Built with Flask, FAISS & Sentence Transformers.</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
